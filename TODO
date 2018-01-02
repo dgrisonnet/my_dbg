@@ -1,0 +1,30 @@
+######################       TODO        #######################
+
+Prompt:                                                     1/2
+    Simple prompt                                           DONE
+    Completion
+
+Commands:                                                   2/6
+    Commands generation                                     DONE
+    help                                                    DONE
+    info_regs
+    info_memory
+    continue
+    single step
+    backtrace
+    next instruction
+
+Types of binbaries:                                         0/3
+    Simple binaries
+    PIE binaries
+    Optimized binaries
+
+Breakpoints:                                                0/2
+    Simple breakpoints
+    Temporary breakpoints                               
+
+Read memory:                                                0/4
+    x : hexadecimal
+    d : decimal
+    i : instructions
+    s : string
