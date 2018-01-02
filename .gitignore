@@ -1,0 +1,7 @@
+*~
+*.swp
+*.o
+*.core
+vgcore.*
+build
+a.out
