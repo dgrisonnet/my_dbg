@@ -4,10 +4,10 @@ Prompt:                                                     1/2
     Simple prompt                                           DONE
     Completion
 
-Commands:                                                   2/6
+Commands:                                                   3/6
     Commands generation                                     DONE
     help                                                    DONE
-    info_regs
+    info_regs                                               DONE
     info_memory
     continue
     single step

@@ -17,13 +17,19 @@ static void prompt(void)
             exit(0);
         }
         exec_cmd(cmd);
+        free(cmd);
     }
 }
 
 int main(int argc, char *argv[])
 {
     (void)argc;
-    (void)argv;
+    pid_t pid = fork();
+    if (pid == 0) {
+        ptrace(PTRACE_TRACEME, 0, 0, 0);
+        execvp(argv[1], argv + 1);
+    }
+    waitpid(pid, NULL, 0);
     prompt();
     return 0;
 }
