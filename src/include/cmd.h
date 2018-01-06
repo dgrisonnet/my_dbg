@@ -2,6 +2,7 @@
 # define CMD_H
 
 #define ALIGNED_CMD_SIZE 32
+#define MAPPING_PATH 17
 
 /** 
  * struct cmd - Debugger commands.
@@ -36,5 +37,9 @@ extern struct cmd __stop_cmds[];
  */
 
 int exec_cmd(char *cmd);
+
+int do_info_regs(void *arg);
+
+int do_info_memory(void *arg);
 
 #endif /* !CMD_H */
