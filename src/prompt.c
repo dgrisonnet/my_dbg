@@ -1,3 +1,4 @@
+#include <err.h>
 #include <stdio.h>
 #include <readline/readline.h>
 #include <readline/history.h>
@@ -5,8 +6,19 @@
 #include <sys/ptrace.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <signal.h>
 
-#include <cmd.h>
+#include "cmd.h"
+#include "dbg.h"
+
+struct ctx g_ctx;
+
+static void init_ctx(void)
+{
+    g_ctx.binary = NULL;
+    g_ctx.child_pid = 0;
+    g_ctx.bp_list = bplist_init();
+}
 
 static void prompt(void)
 {
@@ -14,22 +26,37 @@ static void prompt(void)
         char *cmd = readline("dbg> ");
         if (!cmd) {
             putchar('\n');
+            free(g_ctx.bp_list);
             exit(0);
         }
-        exec_cmd(cmd);
+        int res = exec_cmd(cmd);
         free(cmd);
+        if (res == -1)
+            break;
     }
 }
 
 int main(int argc, char *argv[])
 {
-    (void)argc;
-    pid_t pid = fork();
-    if (pid == 0) {
-        ptrace(PTRACE_TRACEME, 0, 0, 0);
-        execvp(argv[1], argv + 1);
+    if (argc > 2)
+    {
+        warnx("Too many arguments given\n");
+        free(g_ctx.bp_list);
+        return 1;
     }
-    waitpid(pid, NULL, 0);
+    init_ctx();
+    if (argc == 2) {
+        pid_t pid = fork();
+        if (pid == 0) {
+            ptrace(PTRACE_TRACEME, 0, 0, 0);
+            execvp(argv[1], argv + 1);
+        }
+        waitpid(pid, NULL, 0);
+        g_ctx.binary = argv[1];
+        g_ctx.child_pid = pid;
+    }
     prompt();
+    free(g_ctx.bp_list);
+    kill(g_ctx.child_pid, SIGTERM);
     return 0;
 }

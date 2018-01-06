@@ -38,8 +38,26 @@ extern struct cmd __stop_cmds[];
 
 int exec_cmd(char *cmd);
 
-int do_info_regs(void *arg);
+/**
+ * do_info_regs() - Execute info_regs command.
+ * @arg1: Not used.
+ *
+ * Execute the info_regs command inside of the debugger.
+ *
+ * Return: 1 if everything went well otherwise 0.
+ */
 
-int do_info_memory(void *arg);
+int do_info_regs(void *args);
+
+/**
+ * do_info_memory() - Execute info_memory command.
+ * @arg1: Not used.
+ *
+ * Execute the info_memory command inside of the debugger.
+ *
+ * Return: 1 if everything went well otherwise 0.
+ */
+
+int do_info_memory(void *args);
 
 #endif /* !CMD_H */
