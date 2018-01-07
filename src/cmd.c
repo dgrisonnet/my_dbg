@@ -4,9 +4,34 @@
 #include <sys/user.h>
 #include <sys/ptrace.h>
 #include <sys/wait.h>
+#include <inttypes.h>
+#include <capstone/capstone.h>
 
 #include "cmd.h"
 #include "dbg.h"
+
+static void examine_assembly(char *data, size_t size)
+{
+    uint8_t *code = calloc(size, 1);
+    memcpy(code, data, size);
+    csh handle;
+    cs_insn *insn;
+    size_t count;
+    if (cs_open(CS_ARCH_X86, CS_MODE_64, &handle) != CS_ERR_OK) {
+        free(code);
+        return;
+    }
+    count = cs_disasm(handle, code, size, 0x1000, 0, &insn);
+    if (count > 0) {
+        size_t j;
+        for (j = 0; j < count; j++) {
+            printf("0x%"PRIx64":\t%s\t\t%s\n", insn[j].address,
+                   insn[j].mnemonic, insn[j].op_str);
+        }
+        cs_free(insn, count);
+    }
+    free(code);
+}
 
 static void examine_numbers(char *data, size_t size, size_t type)
 {
@@ -38,6 +63,7 @@ static int examine_print(char *data, char format, size_t size)
         examine_numbers(data, size, 2);
         break;
     case 'i':
+        examine_assembly(data, size);
         break;
     default:
         return 1;
