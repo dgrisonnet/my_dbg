@@ -114,6 +114,18 @@ void bplist_destroy(void);
 struct breakpoint *get_breakpoint(long addr);
 
 /**
+ * do_break_del() - Execute break_del command.
+ * @arg1: Id of the breakpoint we want to remove.
+ *
+ * Execute the break_del command inside of the debugger which is removing
+ * the breakpoint corresponding to the given ID.
+ *
+ * Return: 1.
+ */
+
+int do_break_del(void *args);
+
+/**
  * do_break_list() - Execute break_list command.
  * @arg1: Unused argument.
  *

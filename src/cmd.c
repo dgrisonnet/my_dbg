@@ -172,7 +172,6 @@ static int do_continue(void *UNUSED(args))
         printf("Cannot modify data at address 0x%llx\n", regs.rip);
         return 0;
     }
-    printf("0x%lx at 0x%llx\n", bp->content, regs.rip);
     if (ptrace(PTRACE_SETREGS, g_ctx.child_pid, NULL, &regs) == -1) {
         printf("ptrace fail\n");
         return 0;
@@ -281,4 +280,4 @@ shell_cmd(backtrace, printi the call trace at the current %rip, do_backtrace);
 shell_cmd(tbreak, add a temporary breakpoint, do_tbreak);
 shell_cmd(next_instr, single step over call instructions, do_next_instruction);
 shell_cmd(break_list, list all breakpoints, do_break_list);
-//shell_cmd(break_del, delete a breakpoint, do_break_del);
+shell_cmd(break_del, delete a breakpoint, do_break_del);

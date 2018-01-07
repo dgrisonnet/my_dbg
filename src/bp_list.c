@@ -1,6 +1,7 @@
 #include <err.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <sys/ptrace.h>
 
 #include "dbg.h"
 
@@ -27,7 +28,7 @@ void bplist_remove(long id)
     struct bplist_node *prev = NULL;
     int found = 0;
     struct breakpoint *bp;
-    for (struct bplist_node *tmp = g_ctx.bp_list->head; tmp; tmp = tmp->next) {
+    for (struct bplist_node *tmp = g_ctx.bp_list->head; tmp;) {
         bp = CONTAINER_OF(struct breakpoint, node, tmp);
         if (bp->id == id) {
             found = 1;
@@ -36,12 +37,20 @@ void bplist_remove(long id)
                 prev->next = tmp->next;
             else
                 g_ctx.bp_list->head = tmp->next;
+            if (ptrace(PTRACE_POKETEXT, g_ctx.child_pid, (void *)bp->addr,
+                (void *)bp->content) == -1) {
+                printf("Cannot modify data at address 0x%lx\n", bp->addr);
+            }
             free(bp);
+            tmp = NULL;
         }
-        prev = tmp;
+        else
+            prev = tmp;
+        if (tmp)
+            tmp = tmp->next;
     }
     if (!found)
-        warnx("No breakpoint number %lu\n", id);
+        printf("No breakpoint number %lu\n", id);
 }
 
 void bplist_destroy(void)

@@ -1,30 +1,35 @@
 ######################       TODO        #######################
 
+                          CORE FEATURES
+
 Prompt:                                                     1/2
     Simple prompt                                           DONE
     Completion
 
-Commands:                                                   6/8
+Commands:                                                   8/8
     Commands generation                                     DONE
     help                                                    DONE
     info_regs                                               DONE
     info_memory                                             DONE
     continue                                                DONE
     single step                                             DONE
-    backtrace
-    next instruction
+    backtrace                                               DONE
+    next instruction                                        DONE
 
-Types of binbaries:                                         0/3
-    Simple binaries
-    PIE binaries
-    Optimized binaries
-
-Breakpoints:                                                1/2
+Breakpoints:                                                2/2
     Simple breakpoints                                      DONE
-    Temporary breakpoints                               
+    Temporary breakpoints                                   DONE
 
-Read memory:                                                0/4
-    x : hexadecimal
-    d : decimal
-    i : instructions
-    s : string
+Read memory:                                                4/4
+    x : hexadecimal                                         DONE
+    d : decimal                                             DONE
+    i : instructions                                        DONE
+    s : string                                              DONE
+
+                         ADVANCED FEATURES
+
+List of the breakpoints:                                    1/1
+    break_list                                              DONE
+
+Delete a breakpoint:                                        1/1
+    break_del                                               DONE

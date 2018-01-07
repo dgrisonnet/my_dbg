@@ -47,6 +47,13 @@ static void print_bplist(struct bplist_node *node)
     }
 }
 
+int do_break_del(void *args)
+{
+    long id = atol((char *)args);
+    bplist_remove(id);
+    return 1;
+}
+
 int do_break_list(void *UNUSED(args))
 {
     print_bplist(g_ctx.bp_list->head);
