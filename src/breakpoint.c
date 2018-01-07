@@ -7,6 +7,8 @@
 int addr_breakpoint(long addr)
 {
     long data = ptrace(PTRACE_PEEKTEXT, g_ctx.child_pid, (void *)addr, 0);
+    if (data == -1)
+        return 0;
     long trap = (data & 0xFFFFFF00) | 0xCC;
     if (ptrace(PTRACE_POKETEXT, g_ctx.child_pid, (void *)addr,
         (void *)trap) == -1)

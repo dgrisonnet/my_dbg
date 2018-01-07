@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/user.h>
 #include <sys/ptrace.h>
@@ -6,6 +7,65 @@
 
 #include "cmd.h"
 #include "dbg.h"
+
+static void examine_numbers(char *data, size_t size, size_t type)
+{
+    int pretty_print = 16;
+    for (size_t i = 0; i < size; i += type, pretty_print += type) {
+        if (pretty_print == 16) {
+            printf("0x%x: ", *(unsigned *)(data + i));
+            pretty_print = 0;
+        }
+        int tmp = 0;
+        memcpy(data + i, &tmp, size - 1 - i < type ? size - 1 - i : type);
+        if (type == 2)
+            printf("0x%02x ", *(unsigned short *)(data + i));
+        else
+            printf("%d ", *(int *)(data + i));
+    }
+}
+
+static int examine_print(char *data, char format, size_t size)
+{
+    switch (format) {
+    case 's':
+        printf("%s\n", data);
+        break;
+    case 'd':
+        examine_numbers(data, size, 4);
+        break;
+    case 'x':
+        examine_numbers(data, size, 2);
+        break;
+    case 'i':
+        break;
+    default:
+        return 1;
+    }
+    return 0;
+}
+
+static int do_examine(void *args)
+{
+    char format;
+    size_t size;
+    long addr;
+    if (sscanf((char *)args, "%c %zu %lx", &format, &size, &addr) == EOF)
+        return 1;
+    char *data = calloc(size + 1, 1);
+    for (size_t i = 0; i < size; i += 4) {
+        long tmp = ptrace(PTRACE_PEEKTEXT, g_ctx.child_pid,
+                          (void *)(addr + i));
+        if (tmp == -1) {
+            free(data);
+            return 1;
+        }
+        memcpy(data + i, &tmp, size - 1 - i < 4 ? size - 1 - i : 4);
+    }
+    int res = examine_print(data, format, size);
+    free(data);
+    return res;
+}
 
 static int do_single_step(void *args)
 {
@@ -86,7 +146,8 @@ int exec_cmd(char *cmd)
         struct cmd *tmp = __start_cmds + i;
         if (!strncmp(cmd, tmp->cmd, strlen(tmp->cmd))) {
             char *args = cmd + strlen(tmp->cmd) + 1;
-            remove_spaces(args);
+            if (strcmp("examine", tmp->cmd))
+                remove_spaces(args);
             res = (*tmp->fn)(args);
         }
     }
@@ -100,3 +161,4 @@ shell_cmd(help, display this help message, do_help);
 shell_cmd(info_memory, display_memory, do_info_memory);
 shell_cmd(break, add a breakpoint, do_break);
 shell_cmd(step_instr, single step the program being debugged, do_single_step);
+shell_cmd(examine, print data at a specific address, do_examine);
