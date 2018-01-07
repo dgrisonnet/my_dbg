@@ -36,11 +36,22 @@ void bplist_remove(long id)
                 prev->next = tmp->next;
             else
                 g_ctx.bp_list->head = tmp->next;
+            free(bp);
         }
         prev = tmp;
     }
     if (!found)
         warnx("No breakpoint number %lu\n", id);
+}
+
+void bplist_destroy(void)
+{
+    for (struct bplist_node *tmp = g_ctx.bp_list->head; tmp;) {
+        struct breakpoint *bp = CONTAINER_OF(struct breakpoint, node, tmp);
+        tmp = tmp->next;
+        free(bp);
+    }
+    free(g_ctx.bp_list);
 }
 
 struct breakpoint *get_breakpoint(long addr)

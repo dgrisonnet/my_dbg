@@ -13,9 +13,8 @@
 #include "cmd.h"
 #include "dbg.h"
 
-static int do_backtrace(void *args)
+static int do_backtrace(void *UNUSED(args))
 {
-    (void)args;
     unw_cursor_t cursor;
     unw_context_t uc;
     unw_word_t ip;
@@ -144,9 +143,8 @@ static int do_single_step(void *args)
     return 0;
 }
 
-static int do_continue(void *args)
+static int do_continue(void *UNUSED(args))
 {
-    (void)args;
     struct user_regs_struct regs;
     if (ptrace(PTRACE_CONT, g_ctx.child_pid, NULL, NULL) == -1) { 
         printf("ptrace fail\n");
@@ -217,9 +215,8 @@ static int is_call_instruction(long data, long addr, unsigned short *size)
     return is_call;
 }
 
-static int do_next_instruction(void *args)
+static int do_next_instruction(void *UNUSED(args))
 {
-    (void)args;
     struct user_regs_struct regs;
     if (ptrace(PTRACE_GETREGS, g_ctx.child_pid, NULL, &regs) == -1) {
         printf("ptrace fail\n");
@@ -242,15 +239,13 @@ static int do_next_instruction(void *args)
     return 1;
 }
 
-static int do_quit(void *args)
+static int do_quit(void *UNUSED(args))
 {
-    (void)args;
     return -1;
 }
 
-static int do_help(void *args)
+static int do_help(void *UNUSED(args))
 {
-    (void)args;
     for (size_t i = 0; i < (size_t)(__stop_cmds - __start_cmds); ++i) {
         struct cmd *tmp = __start_cmds + i;
         printf("%s: %s\n", tmp->cmd, tmp->desc);
@@ -263,7 +258,9 @@ int exec_cmd(char *cmd)
     int res = 1;
     for (size_t i = 0; i < (size_t)(__stop_cmds - __start_cmds); ++i) {
         struct cmd *tmp = __start_cmds + i;
-        if (!strncmp(cmd, tmp->cmd, strlen(tmp->cmd))) {
+        size_t len = strlen(tmp->cmd);
+        if (!strncmp(cmd, tmp->cmd, len) && (cmd[len] == '\0' ||
+            cmd[len] == ' ')) {
             char *args = cmd + strlen(tmp->cmd) + 1;
             res = (*tmp->fn)(args);
             break;
@@ -283,3 +280,5 @@ shell_cmd(examine, print data at a specific address, do_examine);
 shell_cmd(backtrace, printi the call trace at the current %rip, do_backtrace);
 shell_cmd(tbreak, add a temporary breakpoint, do_tbreak);
 shell_cmd(next_instr, single step over call instructions, do_next_instruction);
+shell_cmd(break_list, list all breakpoints, do_break_list);
+//shell_cmd(break_del, delete a breakpoint, do_break_del);

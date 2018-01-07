@@ -8,9 +8,8 @@
 #include "cmd.h"
 #include "dbg.h"
 
-int do_info_memory(void *args)
+int do_info_memory(void *UNUSED(args))
 {
-    (void)args;
     pid_t pid = getpid();
     char *path = calloc(MAPPING_PATH, 1);
     if (!path)
@@ -30,9 +29,8 @@ int do_info_memory(void *args)
     return 1;
 }
 
-int do_info_regs(void *args)
+int do_info_regs(void *UNUSED(args))
 {
-    (void)args;
     struct user_regs_struct regs;
     if (ptrace(PTRACE_GETREGS, g_ctx.child_pid, NULL, &regs) == -1)
         return 0;

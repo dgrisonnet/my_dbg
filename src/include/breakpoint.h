@@ -96,6 +96,12 @@ void bplist_add(struct bplist_node *node);
 void bplist_remove(long id);
 
 /**
+ * bplist_destroy() - Free all breakpoints.
+ */
+
+void bplist_destroy(void);
+
+/**
  * get_breakpoint() - Get a breakpoint from the list.
  * @arg1: Address of the breakpoint we want to get.
  *
@@ -106,6 +112,18 @@ void bplist_remove(long id);
  */
 
 struct breakpoint *get_breakpoint(long addr);
+
+/**
+ * do_break_list() - Execute break_list command.
+ * @arg1: Unused argument.
+ *
+ * Execute the break_list command inside of the debugger which is adding
+ * printing all the breakpoints.
+ *
+ * Return: 1.
+ */
+
+int do_break_list(void *args);
 
 /**
  * do_tbreak() - Execute tbreak command.

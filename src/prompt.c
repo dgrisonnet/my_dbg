@@ -27,7 +27,7 @@ static void prompt(void)
         char *cmd = readline("dbg> ");
         if (!cmd) {
             putchar('\n');
-            free(g_ctx.bp_list);
+            bplist_destroy();
             exit(0);
         }
         int res = exec_cmd(cmd);
@@ -42,19 +42,18 @@ int main(int argc, char *argv[])
     if (argc < 2)
     {
         warnx("Usage : ./my-dbg <binary>\n");
-        free(g_ctx.bp_list);
         return 1;
     }
     init_ctx();
     pid_t pid = fork();
     if (pid == -1) {
-        free(g_ctx.bp_list);
+        bplist_destroy();
         return 1;
     }
     else if (pid == 0) {
         if (ptrace(PTRACE_TRACEME, 0, NULL, NULL) == -1) {
             perror("Failed to attach to child process");
-            free(g_ctx.bp_list);
+            bplist_destroy();
             return 1;
         }
         execvp(argv[1], argv + 1);
@@ -65,7 +64,7 @@ int main(int argc, char *argv[])
         g_ctx.binary = argv[1];
         g_ctx.child_pid = pid;
         prompt();
-        free(g_ctx.bp_list);
+        bplist_destroy();
     }
     return 0;
 }

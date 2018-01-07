@@ -7,9 +7,8 @@
 #include "breakpoint.h"
 #include "dbg.h"
 
-int add_breakpoint(long addr, enum bp_type type)
+static int add_breakpoint(long addr, enum bp_type type)
 {
-    addr = 0x4000c6;
     long data = ptrace(PTRACE_PEEKDATA, g_ctx.child_pid,
                        (void *)addr, NULL);
     if (data == -1) {
@@ -22,15 +21,35 @@ int add_breakpoint(long addr, enum bp_type type)
         printf("Cannot modify data at address 0x%lx\n", addr);
         return 0;
     }
-    static struct breakpoint bp;
-    memset(&bp, 0, sizeof(struct breakpoint));
-    bp.addr = addr;
-    bp.content = data;
-    bp.type = type;
-    bp.id = g_ctx.bp_list->id;
-    printf("Breakpoint %ld added at address 0x%lx\n", bp.id, addr); 
+    struct breakpoint *bp = malloc(sizeof(struct breakpoint));
+    if (!bp)
+        return 0;
+    bp->addr = addr;
+    bp->content = data;
+    bp->type = type;
+    bp->id = g_ctx.bp_list->id;
+    printf("Breakpoint %ld added at address 0x%lx\n", bp->id, addr); 
     ++g_ctx.bp_list->id;
-    bplist_add(&bp.node);
+    bplist_add(&bp->node);
+    return 1;
+}
+
+static void print_bplist(struct bplist_node *node)
+{
+    if (node) {
+        print_bplist(node->next);
+        struct breakpoint *bp = CONTAINER_OF(struct breakpoint, node, node);
+        if (bp->type == BREAK)
+            printf("Breakpoint : ");
+        else
+            printf("Temporary breakpoint : ");
+        printf("id = %ld addr = 0x%lx\n", bp->id, bp->addr);
+    }
+}
+
+int do_break_list(void *UNUSED(args))
+{
+    print_bplist(g_ctx.bp_list->head);
     return 1;
 }
 
