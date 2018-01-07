@@ -31,9 +31,9 @@ struct bplist_node
 
 struct breakpoint
 {
-    uint64_t addr;
-    uint64_t content;
-    uint64_t id;
+    long addr;
+    long content;
+    long id;
     struct bplist_node node;
 };
 
@@ -49,7 +49,7 @@ struct breakpoint
 struct bp_list
 {
     size_t size;
-    uint64_t id;
+    long id;
     struct bplist_node *head;
 };
 
@@ -78,7 +78,7 @@ void bplist_add(struct bplist_node *node);
  * argument. If none were find it prints an error.
  */
 
-void bplist_remove(uint64_t id);
+void bplist_remove(long id);
 
 /**
  * get_breakpoint() - Get a breakpoint from the list.
@@ -90,7 +90,7 @@ void bplist_remove(uint64_t id);
  * Return: the breakpoint if it was found else NULL;
  */
 
-struct breakpoint *get_breakpoint(uint64_t addr);
+struct breakpoint *get_breakpoint(long addr);
 
 /**
  * do_break() - Execute break command.

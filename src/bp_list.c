@@ -21,7 +21,7 @@ void bplist_add(struct bplist_node *node)
     ++g_ctx.bp_list->size;
 }
 
-void bplist_remove(uint64_t id)
+void bplist_remove(long id)
 {
     struct bplist_node *prev = NULL;
     int found = 0;
@@ -42,7 +42,7 @@ void bplist_remove(uint64_t id)
         warnx("No breakpoint number %lu\n", id);
 }
 
-struct breakpoint *get_breakpoint(uint64_t addr)
+struct breakpoint *get_breakpoint(long addr)
 {
     for (struct bplist_node *tmp = g_ctx.bp_list->head; tmp; tmp = tmp->next) {
         struct breakpoint *bp = CONTAINER_OF(struct breakpoint, node, tmp);
