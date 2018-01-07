@@ -47,16 +47,24 @@ int main(int argc, char *argv[])
     init_ctx();
     if (argc == 2) {
         pid_t pid = fork();
-        if (pid == 0) {
-            ptrace(PTRACE_TRACEME, 0, 0, 0);
+        if (pid == -1) {
+            free(g_ctx.bp_list);
+            return 1;
+        }
+        else if (pid == 0) {
+            if (ptrace(PTRACE_TRACEME, 0, 0, 0) == -1) {
+                free(g_ctx.bp_list);
+                return 1;
+            }
             execvp(argv[1], argv + 1);
         }
-        waitpid(pid, NULL, 0);
-        g_ctx.binary = argv[1];
-        g_ctx.child_pid = pid;
+        else {
+            g_ctx.binary = argv[1];
+            g_ctx.child_pid = pid;
+            prompt();
+            free(g_ctx.bp_list);
+            //kill(g_ctx.child_pid, SIGTERM);
+        }
     }
-    prompt();
-    free(g_ctx.bp_list);
-    kill(g_ctx.child_pid, SIGTERM);
     return 0;
 }
