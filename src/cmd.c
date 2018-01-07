@@ -192,6 +192,56 @@ static int do_continue(void *args)
     return 1;
 }
 
+static int is_call_instruction(long data, long addr, unsigned short *size)
+{
+    uint8_t *code = calloc(4, 1);
+    memcpy(code, &data, 4);
+    csh handle;
+    cs_insn *insn;
+    size_t count;
+    if (cs_open(CS_ARCH_X86, CS_MODE_64, &handle) != CS_ERR_OK) {
+        free(code);
+        return 0;
+    }
+    count = cs_disasm(handle, code, 4, addr, 0, &insn);
+    int is_call = 0;
+    if (count > 0) {
+        if (insn[0].id == X86_INS_CALL) {
+            *size = insn[0].size;
+            count = 1;
+        }
+        cs_free(insn, count);
+    }
+    cs_close(&handle);
+    free(code);
+    return is_call;
+}
+
+static int do_next_instruction(void *args)
+{
+    (void)args;
+    struct user_regs_struct regs;
+    if (ptrace(PTRACE_GETREGS, g_ctx.child_pid, NULL, &regs) == -1) {
+        printf("ptrace fail\n");
+        return 0;
+    }
+    long addr = regs.rip;
+    long data = ptrace(PTRACE_PEEKDATA, g_ctx.child_pid,
+                       (void *)addr, NULL);
+    if (data == -1) {
+        printf("Cannot access data at address 0x%lx\n", addr);
+        return 0;
+    }
+    unsigned short size;
+    if (!is_call_instruction(data, addr, &size))
+        do_single_step(NULL);
+    else {
+        do_tbreak(&addr);
+        do_continue(NULL);
+    }
+    return 1;
+}
+
 static int do_quit(void *args)
 {
     (void)args;
@@ -232,3 +282,4 @@ shell_cmd(step_instr, single step the program being debugged, do_single_step);
 shell_cmd(examine, print data at a specific address, do_examine);
 shell_cmd(backtrace, printi the call trace at the current %rip, do_backtrace);
 shell_cmd(tbreak, add a temporary breakpoint, do_tbreak);
+shell_cmd(next_instr, single step over call instructions, do_next_instruction);
