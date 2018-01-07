@@ -4,7 +4,7 @@
 #include "breakpoint.h"
 #include "dbg.h"
 
-int addr_breakpoint(long addr)
+int add_breakpoint(long addr, enum bp_type type)
 {
     long data = ptrace(PTRACE_PEEKTEXT, g_ctx.child_pid, (void *)addr, 0);
     if (data == -1)
@@ -16,9 +16,19 @@ int addr_breakpoint(long addr)
     struct breakpoint bp;
     bp.addr = addr;
     bp.content = data;
+    bp.type = type;
     bp.id = g_ctx.bp_list->id;
     ++g_ctx.bp_list->id;
     bplist_add(&bp.node);
+    return 1;
+}
+
+int do_tbreak(void *args)
+{
+    if (!args)
+        return 0;
+    long addr = (long)strtol((char *)args, NULL, 0);
+    add_breakpoint(addr, TBREAK);
     return 1;
 }
 
@@ -27,6 +37,6 @@ int do_break(void *args)
     if (!args)
         return 0;
     long addr = (long)strtol((char *)args, NULL, 0);
-    addr_breakpoint(addr);
+    add_breakpoint(addr, BREAK);
     return 1;
 }

@@ -20,10 +20,24 @@ struct bplist_node
 };
 
 /**
+ * enum bp_type - Enumeration of breakpoint types.
+ *
+ * This enumeration allow us to differentiate the differement types of
+ * breakpoints while running the program.
+ */
+
+enum bp_type
+{
+    BREAK = 0,
+    TBREAK,
+};
+
+/**
  * struct breakpoint - Intrusive breakpoint list element.
  * @addr: Address of the breakpoint.
  * @content: Data which was previously at this address.
  * @id: Id of the breakpoint.
+ * @type: Type of the breakpoint.
  * @node: Node stored inside of the intrusive list.
  *
  * Structure used to store our breakpoints information.
@@ -34,6 +48,7 @@ struct breakpoint
     long addr;
     long content;
     long id;
+    enum bp_type type;
     struct bplist_node node;
 };
 
@@ -91,6 +106,18 @@ void bplist_remove(long id);
  */
 
 struct breakpoint *get_breakpoint(long addr);
+
+/**
+ * do_tbreak() - Execute tbreak command.
+ * @arg1: Argument of breakpoint command it must be an hexadecimal address.
+ *
+ * Execute the tbreak command inside of the debugger which is adding a
+ * temporary breakpoint.
+ *
+ * Return: 1 if everything went well otherwise 0.
+ */
+
+int do_tbreak(void *args);
 
 /**
  * do_break() - Execute break command.

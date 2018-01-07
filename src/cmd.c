@@ -151,12 +151,21 @@ static int do_continue(void *args)
     }
     if (ptrace(PTRACE_GETREGS, g_ctx.child_pid, 0, &regs) == -1)
         return 0;
-    void *data = (void *)((get_breakpoint(regs.rip))->content);
+    struct breakpoint *bp = get_breakpoint(regs.rip);
+    void *data = (void *)(bp->content);
     if (ptrace(PTRACE_POKETEXT, g_ctx.child_pid, (void *)regs.rip, data) == -1)
         return 0;
     --regs.rip;
     if (ptrace(PTRACE_SETREGS, g_ctx.child_pid, 0, &regs) == -1)
         return 0;
+    if (ptrace(PTRACE_SINGLESTEP, g_ctx.child_pid, 0, 0) == -1)
+        return 0;
+    if (bp->type != TBREAK) {
+        long trap = (bp->content & 0xFFFFFF00) | 0xCC;
+        if (ptrace(PTRACE_POKETEXT, g_ctx.child_pid, (void *)bp->addr,
+            (void *)trap) == -1)
+            return 0; 
+    }
     return 1;
 }
 
@@ -209,4 +218,4 @@ shell_cmd(break, add a breakpoint, do_break);
 shell_cmd(step_instr, single step the program being debugged, do_single_step);
 shell_cmd(examine, print data at a specific address, do_examine);
 shell_cmd(backtrace, printi the call trace at the current %rip, do_backtrace);
-//shell_cmd(tbreak, add a temporary breakpoint, do_tbreak);
+shell_cmd(tbreak, add a temporary breakpoint, do_tbreak);
