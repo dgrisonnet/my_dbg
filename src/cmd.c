@@ -102,7 +102,7 @@ static int do_examine(void *args)
 {
     char format;
     size_t size;
-    long addr;
+    unsigned long addr;
     if (sscanf((char *)args, "%c %zu %lx", &format, &size, &addr) == EOF)
         return 1;
     char *data = calloc(size + 1, 1);
@@ -123,16 +123,22 @@ static int do_examine(void *args)
 static int do_single_step(void *args)
 {
     (void)args;
-    if (ptrace(PTRACE_SINGLESTEP, g_ctx.child_pid, NULL, NULL) == -1)
+    if (ptrace(PTRACE_SINGLESTEP, g_ctx.child_pid, NULL, NULL) == -1) {
+        printf("ptrace fail\n");
         return 0;
+    }
     int status;
     siginfo_t siginfo;
     wait(&status);
     if (WIFSTOPPED(status)) {
-        if (ptrace(PTRACE_GETSIGINFO, g_ctx.child_pid, NULL, &siginfo) == -1)
+        if (ptrace(PTRACE_GETSIGINFO, g_ctx.child_pid, NULL, &siginfo) == -1) {
+            printf("ptrace fail\n");
             return 0;
-        if (siginfo.si_signo != SIGTRAP)
+        }
+        if (siginfo.si_signo != SIGTRAP) {
+            printf("Child received an unexpected signal\n");
             return 0;
+        }
         printf("%s eip = 0x%lx\n", strsignal(WSTOPSIG(status)),
                (long)siginfo.si_addr);
     }
@@ -183,8 +189,10 @@ static int do_continue(void *UNUSED(args))
     if (bp->type != TBREAK) {
         long trap = (bp->content & 0xFFFFFF00) | 0xCC;
         if (ptrace(PTRACE_POKETEXT, g_ctx.child_pid, (void *)bp->addr,
-                   (void *)trap) == -1)
-            return 0; 
+                   (void *)trap) == -1) {
+            printf("ptrace fail\n");
+            return 0;
+        }
     }
     return 1;
 }

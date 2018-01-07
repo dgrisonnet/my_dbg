@@ -27,8 +27,7 @@ static void prompt(void)
         char *cmd = readline("dbg> ");
         if (!cmd) {
             putchar('\n');
-            bplist_destroy();
-            exit(0);
+            break;
         }
         int res = exec_cmd(cmd);
         free(cmd);

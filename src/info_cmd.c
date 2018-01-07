@@ -17,6 +17,7 @@ int do_info_memory(void *UNUSED(args))
     sprintf(path, "/proc/%u/maps", pid);
     FILE *f = fopen(path, "r");
     if (!f) {
+        printf("Could not open memory mapping\n");
         free(path);
         return 0;
     }
@@ -32,8 +33,10 @@ int do_info_memory(void *UNUSED(args))
 int do_info_regs(void *UNUSED(args))
 {
     struct user_regs_struct regs;
-    if (ptrace(PTRACE_GETREGS, g_ctx.child_pid, NULL, &regs) == -1)
+    if (ptrace(PTRACE_GETREGS, g_ctx.child_pid, NULL, &regs) == -1) {
+        printf("ptrace fail\n");
         return 0;
+    }
     printf("rip: 0x%llx\n", regs.rip);
     printf("rsp: 0x%llx\n", regs.rsp);
     printf("rbp: 0x%llx\n", regs.rbp);
