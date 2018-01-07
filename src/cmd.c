@@ -7,6 +7,28 @@
 #include "cmd.h"
 #include "dbg.h"
 
+static int do_single_step(void *args)
+{
+    (void)args;
+    if (ptrace(PTRACE_SINGLESTEP, g_ctx.child_pid, 0, 0) == -1)
+        return 0;
+    int status;
+    siginfo_t siginfo;
+    wait(&status);
+    if (WIFSTOPPED(status)) {
+        printf("%s\n", strsignal(WSTOPSIG(status)));
+        if (ptrace(PTRACE_GETSIGINFO, g_ctx.child_pid, 0, &siginfo) == -1)
+            return 0;
+        if (siginfo.si_signo != SIGTRAP)
+            return 1;
+    }
+    else {
+        printf("Process terminated\n");
+        return 1;
+    }
+    return 0;
+}
+
 static int do_continue(void *args)
 {
     (void)args;
@@ -17,8 +39,7 @@ static int do_continue(void *args)
     wait(&status);
     if (WIFSTOPPED(status))
         printf("%s\n", strsignal(WSTOPSIG(status)));
-    else
-    {
+    else {
         printf("Process terminated\n");
         return 1;
     }
@@ -78,3 +99,4 @@ shell_cmd(quit, exit, do_quit);
 shell_cmd(help, display this help message, do_help);
 shell_cmd(info_memory, display_memory, do_info_memory);
 shell_cmd(break, add a breakpoint, do_break);
+shell_cmd(step_instr, single step the program being debugged, do_single_step);

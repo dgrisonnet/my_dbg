@@ -4,13 +4,13 @@ Prompt:                                                     1/2
     Simple prompt                                           DONE
     Completion
 
-Commands:                                                   3/6
+Commands:                                                   6/8
     Commands generation                                     DONE
     help                                                    DONE
     info_regs                                               DONE
-    info_memory
-    continue
-    single step
+    info_memory                                             DONE
+    continue                                                DONE
+    single step                                             DONE
     backtrace
     next instruction
 
@@ -19,8 +19,8 @@ Types of binbaries:                                         0/3
     PIE binaries
     Optimized binaries
 
-Breakpoints:                                                0/2
-    Simple breakpoints
+Breakpoints:                                                1/2
+    Simple breakpoints                                      DONE
     Temporary breakpoints                               
 
 Read memory:                                                0/4
