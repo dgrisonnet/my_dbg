@@ -1,3 +1,5 @@
+#define UNW_LOCAL_ONLY
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -6,9 +8,27 @@
 #include <sys/wait.h>
 #include <inttypes.h>
 #include <capstone/capstone.h>
+#include <libunwind.h>
 
 #include "cmd.h"
 #include "dbg.h"
+
+static int do_backtrace(void *args)
+{
+    (void)args;
+    unw_cursor_t cursor;
+    unw_context_t uc;
+    unw_word_t ip;
+    unw_word_t sp;
+    unw_getcontext(&uc);
+    unw_init_local(&cursor, &uc);
+    while (unw_step(&cursor) > 0) {
+        unw_get_reg(&cursor, UNW_REG_IP, &ip);
+        unw_get_reg(&cursor, UNW_REG_SP, &sp);
+        printf("ip = %lx, sp = %lx\n", (long)ip, (long)sp);
+    }
+    return 1;
+}
 
 static void examine_assembly(char *data, size_t size)
 {
@@ -188,3 +208,5 @@ shell_cmd(info_memory, display_memory, do_info_memory);
 shell_cmd(break, add a breakpoint, do_break);
 shell_cmd(step_instr, single step the program being debugged, do_single_step);
 shell_cmd(examine, print data at a specific address, do_examine);
+shell_cmd(backtrace, printi the call trace at the current %rip, do_backtrace);
+//shell_cmd(tbreak, add a temporary breakpoint, do_tbreak);
