@@ -1,4 +1,5 @@
 #include <err.h>
+#include <errno.h>
 #include <stdio.h>
 #include <readline/readline.h>
 #include <readline/history.h>
@@ -38,33 +39,33 @@ static void prompt(void)
 
 int main(int argc, char *argv[])
 {
-    if (argc > 2)
+    if (argc < 2)
     {
-        warnx("Too many arguments given\n");
+        warnx("Usage : ./my-dbg <binary>\n");
         free(g_ctx.bp_list);
         return 1;
     }
     init_ctx();
-    if (argc == 2) {
-        pid_t pid = fork();
-        if (pid == -1) {
+    pid_t pid = fork();
+    if (pid == -1) {
+        free(g_ctx.bp_list);
+        return 1;
+    }
+    else if (pid == 0) {
+        if (ptrace(PTRACE_TRACEME, 0, NULL, NULL) == -1) {
+            perror("Failed to attach to child process");
             free(g_ctx.bp_list);
             return 1;
         }
-        else if (pid == 0) {
-            if (ptrace(PTRACE_TRACEME, 0, 0, 0) == -1) {
-                free(g_ctx.bp_list);
-                return 1;
-            }
-            execvp(argv[1], argv + 1);
-        }
-        else {
-            g_ctx.binary = argv[1];
-            g_ctx.child_pid = pid;
-            prompt();
-            free(g_ctx.bp_list);
-            //kill(g_ctx.child_pid, SIGTERM);
-        }
+        execvp(argv[1], argv + 1);
+    }
+    else {
+        int status;
+        wait(&status);
+        g_ctx.binary = argv[1];
+        g_ctx.child_pid = pid;
+        prompt();
+        free(g_ctx.bp_list);
     }
     return 0;
 }

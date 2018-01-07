@@ -30,7 +30,7 @@ static int do_backtrace(void *args)
     return 1;
 }
 
-static void examine_assembly(char *data, size_t size)
+static void examine_assembly(char *data, size_t size, long addr)
 {
     uint8_t *code = calloc(size, 1);
     memcpy(code, data, size);
@@ -41,7 +41,7 @@ static void examine_assembly(char *data, size_t size)
         free(code);
         return;
     }
-    count = cs_disasm(handle, code, size, 0x1000, 0, &insn);
+    count = cs_disasm(handle, code, size, addr, 0, &insn);
     if (count > 0) {
         size_t j;
         for (j = 0; j < count; j++) {
@@ -50,40 +50,48 @@ static void examine_assembly(char *data, size_t size)
         }
         cs_free(insn, count);
     }
+    else 
+        printf("Failed to dissasemble given code\n");
+    cs_close(&handle);
     free(code);
 }
 
-static void examine_numbers(char *data, size_t size, size_t type)
+static void examine_numbers(char *data, size_t size, size_t type,
+                            long addr)
 {
     int pretty_print = 16;
     for (size_t i = 0; i < size; i += type, pretty_print += type) {
         if (pretty_print == 16) {
-            printf("0x%x: ", *(unsigned *)(data + i));
+            if (i)
+                printf("\n");
+            printf("0x%lx: ", addr + i);
             pretty_print = 0;
         }
-        int tmp = 0;
-        memcpy(data + i, &tmp, size - 1 - i < type ? size - 1 - i : type);
-        if (type == 2)
-            printf("0x%02x ", *(unsigned short *)(data + i));
+        long tmp = 0;
+        memcpy(&tmp, data + i, size - 1 - i < type ? size - 1 - i : type);
+        if (type == 8)
+            printf("0x%08lx ", tmp);
         else
-            printf("%d ", *(int *)(data + i));
+            printf("%ld ", tmp);
     }
+    printf("\n");
 }
 
-static int examine_print(char *data, char format, size_t size)
+static int examine_print(char *data, char format, size_t size,
+                         long addr)
 {
     switch (format) {
     case 's':
-        printf("%s\n", data);
+        printf("0x%lx: %s\n", addr, data);
         break;
     case 'd':
-        examine_numbers(data, size, 4);
+        examine_numbers(data, size, 4, addr);
         break;
     case 'x':
-        examine_numbers(data, size, 2);
+        examine_numbers(data, size, 8, addr);
         break;
     case 'i':
-        examine_assembly(data, size);
+        examine_assembly(data, size, addr);
         break;
     default:
         return 1;
@@ -101,14 +109,14 @@ static int do_examine(void *args)
     char *data = calloc(size + 1, 1);
     for (size_t i = 0; i < size; i += 4) {
         long tmp = ptrace(PTRACE_PEEKTEXT, g_ctx.child_pid,
-                          (void *)(addr + i));
+                          (void *)(addr + i), NULL);
         if (tmp == -1) {
             free(data);
             return 1;
         }
         memcpy(data + i, &tmp, size - 1 - i < 4 ? size - 1 - i : 4);
     }
-    int res = examine_print(data, format, size);
+    int res = examine_print(data, format, size, addr);
     free(data);
     return res;
 }
@@ -116,17 +124,18 @@ static int do_examine(void *args)
 static int do_single_step(void *args)
 {
     (void)args;
-    if (ptrace(PTRACE_SINGLESTEP, g_ctx.child_pid, 0, 0) == -1)
+    if (ptrace(PTRACE_SINGLESTEP, g_ctx.child_pid, NULL, NULL) == -1)
         return 0;
     int status;
     siginfo_t siginfo;
     wait(&status);
     if (WIFSTOPPED(status)) {
-        printf("%s\n", strsignal(WSTOPSIG(status)));
-        if (ptrace(PTRACE_GETSIGINFO, g_ctx.child_pid, 0, &siginfo) == -1)
+        if (ptrace(PTRACE_GETSIGINFO, g_ctx.child_pid, NULL, &siginfo) == -1)
             return 0;
         if (siginfo.si_signo != SIGTRAP)
-            return 1;
+            return 0;
+        printf("%s eip = 0x%lx\n", strsignal(WSTOPSIG(status)),
+               (long)siginfo.si_addr);
     }
     else {
         printf("Process terminated\n");
@@ -139,8 +148,10 @@ static int do_continue(void *args)
 {
     (void)args;
     struct user_regs_struct regs;
-    if (ptrace(PTRACE_CONT, g_ctx.child_pid, 0, 0) == -1)
+    if (ptrace(PTRACE_CONT, g_ctx.child_pid, NULL, NULL) == -1) { 
+        printf("ptrace fail\n");
         return 0;
+    }
     int status;
     wait(&status);
     if (WIFSTOPPED(status))
@@ -149,21 +160,33 @@ static int do_continue(void *args)
         printf("Process terminated\n");
         return 1;
     }
-    if (ptrace(PTRACE_GETREGS, g_ctx.child_pid, 0, &regs) == -1)
+    if (ptrace(PTRACE_GETREGS, g_ctx.child_pid, NULL, &regs) == -1) {
+        printf("ptrace fail\n");
         return 0;
-    struct breakpoint *bp = get_breakpoint(regs.rip);
-    void *data = (void *)(bp->content);
-    if (ptrace(PTRACE_POKETEXT, g_ctx.child_pid, (void *)regs.rip, data) == -1)
-        return 0;
+    }
     --regs.rip;
-    if (ptrace(PTRACE_SETREGS, g_ctx.child_pid, 0, &regs) == -1)
+    struct breakpoint *bp = get_breakpoint(regs.rip);
+    if (!bp)
         return 0;
-    if (ptrace(PTRACE_SINGLESTEP, g_ctx.child_pid, 0, 0) == -1)
+    void *data = (void *)(bp->content);
+    if (ptrace(PTRACE_POKETEXT, g_ctx.child_pid, (void *)regs.rip, data)
+        == -1) {
+        printf("Cannot modify data at address 0x%llx\n", regs.rip);
         return 0;
+    }
+    printf("0x%lx at 0x%llx\n", bp->content, regs.rip);
+    if (ptrace(PTRACE_SETREGS, g_ctx.child_pid, NULL, &regs) == -1) {
+        printf("ptrace fail\n");
+        return 0;
+    }
+    if (ptrace(PTRACE_SINGLESTEP, g_ctx.child_pid, NULL, NULL) == -1) {
+        printf("ptrace fail\n");
+        return 0;
+    }
     if (bp->type != TBREAK) {
         long trap = (bp->content & 0xFFFFFF00) | 0xCC;
         if (ptrace(PTRACE_POKETEXT, g_ctx.child_pid, (void *)bp->addr,
-            (void *)trap) == -1)
+                   (void *)trap) == -1)
             return 0; 
     }
     return 1;
@@ -185,15 +208,6 @@ static int do_help(void *args)
     return 1;
 }
 
-static void remove_spaces(char *str)
-{
-    size_t pos = 0;
-    for (size_t i = 0; str[i] != '\0'; ++i)
-        if (str[i] != ' ')
-            str[pos++] = str[i];
-    str[pos] = '\0';
-}
-
 int exec_cmd(char *cmd)
 {
     int res = 1;
@@ -201,9 +215,8 @@ int exec_cmd(char *cmd)
         struct cmd *tmp = __start_cmds + i;
         if (!strncmp(cmd, tmp->cmd, strlen(tmp->cmd))) {
             char *args = cmd + strlen(tmp->cmd) + 1;
-            if (strcmp("examine", tmp->cmd))
-                remove_spaces(args);
             res = (*tmp->fn)(args);
+            break;
         }
     }
     return res;
