@@ -284,7 +284,7 @@ shell_cmd(info_memory, display_memory, do_info_memory);
 shell_cmd(break, add a breakpoint, do_break);
 shell_cmd(step_instr, single step the program being debugged, do_single_step);
 shell_cmd(examine, print data at a specific address, do_examine);
-shell_cmd(backtrace, printi the call trace at the current %rip, do_backtrace);
+shell_cmd(backtrace, print the call trace at the current %rip, do_backtrace);
 shell_cmd(tbreak, add a temporary breakpoint, do_tbreak);
 shell_cmd(next_instr, single step over call instructions, do_next_instruction);
 shell_cmd(break_list, list all breakpoints, do_break_list);
