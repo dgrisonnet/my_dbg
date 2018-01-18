@@ -49,8 +49,6 @@ able to debug it.
  -[X] Breakpoints deleting
 
 ---
-
----
 #### Project's Directory Tree
 
 ```
